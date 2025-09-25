@@ -45,16 +45,16 @@
         }
         .thumbnail-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
             gap: 8px;
         }
         .upload-plus {
-            background: rgba(59, 130, 246, 0.1);
-            border: 2px dashed rgba(59, 130, 246, 0.3);
+            background: rgba(0, 173, 216, 0.1);
+            border: 2px dashed rgba(0, 173, 216, 0.3);
         }
         .upload-plus:hover {
-            background: rgba(59, 130, 246, 0.2);
-            border-color: rgba(59, 130, 246, 0.5);
+            background: rgba(0, 173, 216, 0.2);
+            border-color: rgba(0, 173, 216, 0.5);
         }
         .scrollbar-hide {
             -ms-overflow-style: none;
@@ -65,6 +65,10 @@
         }
         .h-18 {
             height: 4.5rem;
+        }
+        .fade-mask {
+            mask: linear-gradient(to left, transparent 0%, black 40px);
+            -webkit-mask: linear-gradient(to left, transparent 0%, black 40px);
         }
     </style>
 </head>
@@ -100,7 +104,7 @@
             <!-- Upload Area -->
             <div id="uploadArea" class="upload-plus rounded-lg p-6 mb-6 text-center cursor-pointer transition-all">
                 <div class="w-16 h-16 mx-auto mb-3 flex items-center justify-center">
-                    <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-8 h-8" fill="none" stroke="#00ADD8" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                     </svg>
                 </div>
@@ -123,7 +127,7 @@
 
     <!-- Bottom Gallery Strip -->
     <div id="bottomGallery" class="fixed bottom-4 z-20" style="left: calc(320px + 2rem); right: 1rem;">
-        <div id="galleryStrip" class="flex space-x-4 overflow-x-auto scrollbar-hide py-2">
+        <div id="galleryStrip" class="flex space-x-4 overflow-x-auto scrollbar-hide py-2 fade-mask">
             <div class="text-white/60 text-center py-4 px-4 flex-shrink-0">Loading...</div>
         </div>
     </div>

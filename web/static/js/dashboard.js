@@ -14,6 +14,7 @@ class Dashboard {
         this.leftPanel = document.getElementById('leftPanel');
         this.bottomGallery = document.getElementById('bottomGallery');
         this.resizeHandle = document.getElementById('resizeHandle');
+
         this.galleryOffset = 0;
         this.isLoading = false;
         this.isResizing = false;
@@ -101,7 +102,7 @@ class Dashboard {
             <div class="flex-shrink-0 cursor-pointer group" onclick="window.dashboard.showImageDetail('${image.id}')">
                 <img src="/api/images/${image.id}/file?thumb=280" 
                      alt="${image.original_name}" 
-                     class="w-48 h-36 object-cover rounded-lg shadow-soft group-hover:scale-105 transition-transform">
+                     class="w-48 h-36 object-cover rounded-lg shadow-soft group-hover:scale-105 transition-transform" style="image-orientation: from-image;">
             </div>
         `).join('');
     }
@@ -111,9 +112,9 @@ class Dashboard {
         
         this.recentUploads.innerHTML = recent.map(image => `
             <div class="cursor-pointer group" onclick="this.showImageDetail('${image.id}')">
-                <img src="/api/images/${image.id}/file?thumb=80" 
+                <img src="/api/images/${image.id}/file?thumb=120" 
                      alt="${image.original_name}" 
-                     class="w-full h-20 object-cover rounded-lg shadow-inner-custom group-hover:scale-105 transition-transform">
+                     class="w-full aspect-square object-cover rounded-lg shadow-inner-custom group-hover:scale-105 transition-transform" style="image-orientation: from-image;">
             </div>
         `).join('');
     }
@@ -137,7 +138,7 @@ class Dashboard {
             this.slideshowInterval = setInterval(() => {
                 this.currentSlideIndex = (this.currentSlideIndex + 1) % this.slideshowImages.length;
                 this.updateSlideshow();
-            }, 5000);
+            }, 8000);
         }
     }
 
@@ -244,6 +245,13 @@ class Dashboard {
     
     handleScroll() {
         const { scrollLeft, scrollWidth, clientWidth } = this.galleryStrip;
+        
+        // Remove fade mask when at the end
+        if (scrollLeft + clientWidth >= scrollWidth - 50) {
+            this.galleryStrip.classList.remove('fade-mask');
+        } else {
+            this.galleryStrip.classList.add('fade-mask');
+        }
         
         if (scrollLeft + clientWidth >= scrollWidth - 100 && !this.isLoading) {
             this.loadMoreImages();
