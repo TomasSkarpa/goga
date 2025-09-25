@@ -1,86 +1,165 @@
 class Dashboard {
     constructor() {
-        this.gallery = document.getElementById('gallery');
-        this.uploadBtn = document.getElementById('uploadBtn');
+        this.slideshow = document.getElementById('slideshow');
+        this.layer1 = document.getElementById('layer1');
+        this.layer2 = document.getElementById('layer2');
+        this.galleryStrip = document.getElementById('galleryStrip');
+        this.recentUploads = document.getElementById('recentUploads');
+        this.uploadArea = document.getElementById('uploadArea');
+        this.fileInput = document.getElementById('fileInput');
         this.uploadModal = document.getElementById('uploadModal');
-        this.dropZone = document.getElementById('dropZone');
-        this.modalFileInput = document.getElementById('modalFileInput');
         this.uploadProgress = document.getElementById('uploadProgress');
+        this.configBtn = document.getElementById('configBtn');
+        this.galleryBtn = document.getElementById('galleryBtn');
+        this.leftPanel = document.getElementById('leftPanel');
+        this.bottomGallery = document.getElementById('bottomGallery');
+        this.resizeHandle = document.getElementById('resizeHandle');
+        this.galleryOffset = 0;
+        this.isLoading = false;
+        this.isResizing = false;
+        this.panelWidth = 320;
+        
+        this.images = [];
+        this.slideshowImages = [];
+        this.currentSlideIndex = 0;
+        this.slideshowInterval = null;
+        this.activeLayer = this.layer1;
+        this.inactiveLayer = this.layer2;
+        this.maxSlideshowImages = 8;
         
         this.initEventListeners();
         this.loadImages();
     }
 
     initEventListeners() {
-        this.uploadBtn.addEventListener('click', () => this.showUploadModal());
+        // Upload area
+        this.uploadArea.addEventListener('click', () => this.fileInput.click());
+        this.fileInput.addEventListener('change', (e) => this.handleFiles(e.target.files));
+
+        // Drag and drop
+        this.uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            this.uploadArea.classList.add('bg-blue-500/20', 'border-blue-400');
+        });
+
+        this.uploadArea.addEventListener('dragleave', () => {
+            this.uploadArea.classList.remove('bg-blue-500/20', 'border-blue-400');
+        });
+
+        this.uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            this.uploadArea.classList.remove('bg-blue-500/20', 'border-blue-400');
+            this.handleFiles(e.dataTransfer.files);
+        });
+
+        // Buttons
+        this.configBtn.addEventListener('click', () => this.showConfig());
+        this.galleryBtn.addEventListener('click', () => this.showFullGallery());
         
+        // Infinite scroll
+        this.galleryStrip.addEventListener('scroll', () => this.handleScroll());
+        
+        // Panel resize
+        this.resizeHandle.addEventListener('mousedown', (e) => this.startResize(e));
+        document.addEventListener('mousemove', (e) => this.handleResize(e));
+        document.addEventListener('mouseup', () => this.stopResize());
+
         // Modal close
-        this.uploadModal.querySelector('.close').addEventListener('click', () => this.hideUploadModal());
         this.uploadModal.addEventListener('click', (e) => {
             if (e.target === this.uploadModal) this.hideUploadModal();
         });
-
-        // File input
-        this.modalFileInput.addEventListener('change', (e) => this.handleFiles(e.target.files));
-
-        // Drag and drop
-        this.dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            this.dropZone.classList.add('border-blue-400', 'bg-blue-50');
-        });
-
-        this.dropZone.addEventListener('dragleave', () => {
-            this.dropZone.classList.remove('border-blue-400', 'bg-blue-50');
-        });
-
-        this.dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            this.dropZone.classList.remove('border-blue-400', 'bg-blue-50');
-            this.handleFiles(e.dataTransfer.files);
-        });
-    }
-
-    showUploadModal() {
-        this.uploadModal.classList.remove('hidden');
-    }
-
-    hideUploadModal() {
-        this.uploadModal.classList.add('hidden');
-        this.uploadProgress.innerHTML = '';
-        this.modalFileInput.value = '';
     }
 
     async loadImages() {
         try {
             const response = await fetch('/api/images');
-            const images = await response.json();
-            this.renderImages(images);
+            this.images = await response.json();
+            
+            // Create slideshow subset
+            this.slideshowImages = this.images.slice(0, this.maxSlideshowImages);
+            this.preloadSlideshowImages();
+            
+            this.renderGalleryStrip();
+            this.renderRecentUploads();
+            this.startSlideshow();
         } catch (error) {
             console.error('Failed to load images:', error);
-            this.gallery.innerHTML = '<div class="col-span-full text-center py-12 text-red-500">Failed to load images</div>';
+            this.galleryStrip.innerHTML = '<div class="text-white/60 text-center py-8 px-4">Failed to load images</div>';
         }
     }
 
-    renderImages(images) {
-        if (images.length === 0) {
-            this.gallery.innerHTML = '<div class="col-span-full text-center py-12 text-gray-500">No images uploaded yet</div>';
+    renderGalleryStrip() {
+        if (this.images.length === 0) {
+            this.galleryStrip.innerHTML = '<div class="text-white/60 text-center py-4 px-4 flex-shrink-0">No images</div>';
             return;
         }
 
-        this.gallery.innerHTML = images.map(image => `
-            <div class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onclick="window.location.href='/image/${image.id}'">
-                <img src="/api/images/${image.id}/file?thumb=250" alt="${image.original_name}" class="w-full h-48 object-cover">
-                <div class="p-4">
-                    <h3 class="font-medium text-gray-900 truncate">${image.original_name}</h3>
-                    <p class="text-sm text-gray-500 mt-1">${this.formatFileSize(image.size)} • ${image.format.toUpperCase()}</p>
-                    <p class="text-xs text-gray-400 mt-1">${new Date(image.created_at).toLocaleDateString()}</p>
-                </div>
+        // Sort by recent access (most recent first), then by creation date
+        const sortedImages = this.getSortedImagesByAccess();
+        
+        this.galleryStrip.innerHTML = sortedImages.map(image => `
+            <div class="flex-shrink-0 cursor-pointer group" onclick="window.dashboard.showImageDetail('${image.id}')">
+                <img src="/api/images/${image.id}/file?thumb=280" 
+                     alt="${image.original_name}" 
+                     class="w-48 h-36 object-cover rounded-lg shadow-soft group-hover:scale-105 transition-transform">
             </div>
         `).join('');
     }
 
+    renderRecentUploads() {
+        const recent = this.images.slice(0, 8);
+        
+        this.recentUploads.innerHTML = recent.map(image => `
+            <div class="cursor-pointer group" onclick="this.showImageDetail('${image.id}')">
+                <img src="/api/images/${image.id}/file?thumb=80" 
+                     alt="${image.original_name}" 
+                     class="w-full h-20 object-cover rounded-lg shadow-inner-custom group-hover:scale-105 transition-transform">
+            </div>
+        `).join('');
+    }
+
+    preloadSlideshowImages() {
+        this.slideshowImages.forEach(image => {
+            const img = new Image();
+            img.src = `/api/images/${image.id}/file`;
+        });
+    }
+
+    startSlideshow() {
+        if (this.slideshowImages.length === 0) return;
+        
+        // Set first image immediately
+        const firstImage = this.slideshowImages[0];
+        this.activeLayer.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('/api/images/${firstImage.id}/file')`;
+        this.activeLayer.classList.add('active');
+        
+        if (this.slideshowImages.length > 1) {
+            this.slideshowInterval = setInterval(() => {
+                this.currentSlideIndex = (this.currentSlideIndex + 1) % this.slideshowImages.length;
+                this.updateSlideshow();
+            }, 5000);
+        }
+    }
+
+    updateSlideshow() {
+        if (this.slideshowImages.length === 0) return;
+        
+        const currentImage = this.slideshowImages[this.currentSlideIndex];
+        
+        // Set new image on inactive layer
+        this.inactiveLayer.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('/api/images/${currentImage.id}/file')`;
+        
+        // Crossfade transition
+        this.inactiveLayer.classList.add('active');
+        this.activeLayer.classList.remove('active');
+        
+        // Swap layers
+        [this.activeLayer, this.inactiveLayer] = [this.inactiveLayer, this.activeLayer];
+    }
+
     async handleFiles(files) {
         const fileArray = Array.from(files);
+        this.showUploadModal();
         
         for (let i = 0; i < fileArray.length; i++) {
             const file = fileArray[i];
@@ -96,19 +175,19 @@ class Dashboard {
         formData.append('image', file);
 
         const progressDiv = document.createElement('div');
-        progressDiv.className = 'mb-2';
+        progressDiv.className = 'mb-3';
         progressDiv.innerHTML = `
-            <div class="flex justify-between text-sm text-gray-600 mb-1">
-                <span>${file.name}</span>
+            <div class="flex justify-between text-white/90 text-sm mb-2">
+                <span class="truncate">${file.name}</span>
                 <span>${current}/${total}</span>
             </div>
-            <div class="w-full bg-gray-200 rounded-full h-2">
-                <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+            <div class="w-full bg-white/20 rounded-full h-2">
+                <div class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
             </div>
         `;
         this.uploadProgress.appendChild(progressDiv);
 
-        const progressBar = progressDiv.querySelector('.bg-blue-600');
+        const progressBar = progressDiv.querySelector('.bg-blue-500');
 
         try {
             const response = await fetch('/api/images/upload', {
@@ -118,29 +197,105 @@ class Dashboard {
 
             if (response.ok) {
                 progressBar.style.width = '100%';
-                progressBar.classList.remove('bg-blue-600');
+                progressBar.classList.remove('bg-blue-500');
                 progressBar.classList.add('bg-green-500');
             } else {
                 throw new Error('Upload failed');
             }
         } catch (error) {
             console.error('Upload failed:', error);
-            progressBar.classList.remove('bg-blue-600');
+            progressBar.classList.remove('bg-blue-500');
             progressBar.classList.add('bg-red-500');
             progressBar.style.width = '100%';
         }
     }
 
-    formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    showUploadModal() {
+        this.uploadModal.classList.remove('hidden');
+        this.uploadProgress.innerHTML = '';
+    }
+
+    hideUploadModal() {
+        this.uploadModal.classList.add('hidden');
+        this.uploadProgress.innerHTML = '';
+        this.fileInput.value = '';
+    }
+
+    getSortedImagesByAccess() {
+        const recentAccess = JSON.parse(localStorage.getItem('recentImageAccess') || '{}');
+        
+        return this.images.sort((a, b) => {
+            const aAccess = recentAccess[a.id] || 0;
+            const bAccess = recentAccess[b.id] || 0;
+            
+            if (aAccess !== bAccess) {
+                return bAccess - aAccess; // Most recent first
+            }
+            
+            return new Date(b.created_at) - new Date(a.created_at); // Then by creation date
+        });
+    }
+    
+    trackImageAccess(imageId) {
+        const recentAccess = JSON.parse(localStorage.getItem('recentImageAccess') || '{}');
+        recentAccess[imageId] = Date.now();
+        localStorage.setItem('recentImageAccess', JSON.stringify(recentAccess));
+    }
+    
+    handleScroll() {
+        const { scrollLeft, scrollWidth, clientWidth } = this.galleryStrip;
+        
+        if (scrollLeft + clientWidth >= scrollWidth - 100 && !this.isLoading) {
+            this.loadMoreImages();
+        }
+    }
+
+    showImageDetail(imageId) {
+        this.trackImageAccess(imageId);
+        window.location.href = `/image/${imageId}`;
+    }
+
+    showConfig() {
+        alert('Configuration panel - Coming soon!');
+    }
+
+    showFullGallery() {
+        // Toggle to full gallery view
+        alert('Full gallery view - Coming soon!');
+    }
+
+    startResize(e) {
+        this.isResizing = true;
+        e.preventDefault();
+    }
+    
+    handleResize(e) {
+        if (!this.isResizing) return;
+        
+        const newWidth = Math.max(280, Math.min(500, e.clientX));
+        this.panelWidth = newWidth;
+        
+        this.leftPanel.style.width = `${newWidth}px`;
+        this.bottomGallery.style.left = `calc(${newWidth}px + 2rem)`;
+    }
+    
+    stopResize() {
+        this.isResizing = false;
+    }
+
+    async loadMoreImages() {
+        if (this.isLoading) return;
+        
+        this.isLoading = true;
+        // In a real app, this would fetch more images from the API
+        // For now, we'll just re-render existing images
+        setTimeout(() => {
+            this.isLoading = false;
+        }, 500);
     }
 }
 
 // Initialize dashboard when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new Dashboard();
+    window.dashboard = new Dashboard();
 });
