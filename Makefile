@@ -23,7 +23,7 @@ clean:
 # Install development dependencies
 install-deps:
 	go mod tidy
-	go install github.com/cosmtrek/air@latest
+	go install github.com/air-verse/air@latest
 
 # Install and run
 setup: install-deps

@@ -127,7 +127,7 @@ class ImageDetail {
 
 // Initialize image detail page when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    if (typeof imageID !== 'undefined') {
+    if (typeof imageID !== 'undefined' && imageID && imageID !== 'undefined') {
         new ImageDetail(imageID);
     }
 });

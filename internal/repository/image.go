@@ -3,7 +3,6 @@ package repository
 import (
 	"database/sql"
 	"goga/internal/models"
-	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )

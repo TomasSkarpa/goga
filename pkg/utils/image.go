@@ -16,19 +16,15 @@ func ProcessImage(inputPath, outputPath string, format string, quality int) erro
 		return fmt.Errorf("failed to open image: %w", err)
 	}
 
-	var saveFormat imaging.Format
 	switch strings.ToLower(format) {
 	case "jpeg", "jpg":
-		saveFormat = imaging.JPEG
+		err = imaging.Save(src, outputPath, imaging.JPEGQuality(quality))
 	case "png":
-		saveFormat = imaging.PNG
-	case "webp":
-		saveFormat = imaging.WebP
+		err = imaging.Save(src, outputPath, imaging.PNGCompressionLevel(6))
 	default:
 		return fmt.Errorf("unsupported format: %s", format)
 	}
 
-	err = imaging.Save(src, outputPath, saveFormat)
 	if err != nil {
 		return fmt.Errorf("failed to save image: %w", err)
 	}

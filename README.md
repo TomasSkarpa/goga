@@ -6,7 +6,7 @@ A modern, lightweight local web application built in Go for managing and editing
 
 - 📸 **Photo Upload & Management** - Drag & drop or browse to upload images
 - 🎨 **Image Editing** - Basic editing tools (resize, rotate, crop)
-- 🔄 **Format Conversion** - Convert between JPEG, PNG, WebP formats
+- 🔄 **Format Conversion** - Convert between JPEG, PNG formats
 - ⚡ **Image Optimization** - Automatic compression and optimization
 - 📱 **Responsive Dashboard** - Clean, modern web interface
 - 🗂️ **Gallery Organization** - Browse and organize your photo collection

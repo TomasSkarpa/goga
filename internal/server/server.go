@@ -40,7 +40,7 @@ func New(dbPath, uploadDir string) (*Server, error) {
 
 	// Setup router
 	router := gin.Default()
-	router.LoadHTMLGlob("web/templates/*")
+	router.LoadHTMLGlob("web/templates/*.html")
 	router.Static("/static", "./web/static")
 
 	// Web routes
