@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"goga/internal/repository"
+	"goga/pkg/utils"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -143,19 +144,7 @@ func (h *EditHandler) ApplyEdit(c *gin.Context) {
 	}
 
 	// Clear thumbnails cache
-	thumbDir := filepath.Join(h.uploadDir, "thumbs")
-	if _, err := os.Stat(thumbDir); err == nil {
-		filepath.Walk(thumbDir, func(path string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() {
-				return nil
-			}
-			filename := filepath.Base(path)
-			if len(filename) >= len(id) && filename[:len(id)] == id {
-				os.Remove(path)
-			}
-			return nil
-		})
-	}
+	utils.ClearThumbnailCache(h.uploadDir, id)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Image edited successfully"})
 }
@@ -305,19 +294,7 @@ func (h *EditHandler) ResetImage(c *gin.Context) {
 	src.WriteTo(dst)
 
 	// Clear thumbnails cache
-	thumbDir := filepath.Join(h.uploadDir, "thumbs")
-	if _, err := os.Stat(thumbDir); err == nil {
-		filepath.Walk(thumbDir, func(path string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() {
-				return nil
-			}
-			filename := filepath.Base(path)
-			if len(filename) >= len(id) && filename[:len(id)] == id {
-				os.Remove(path)
-			}
-			return nil
-		})
-	}
+	utils.ClearThumbnailCache(h.uploadDir, id)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Image reset to original"})
 }

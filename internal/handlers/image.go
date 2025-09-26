@@ -218,5 +218,9 @@ func (h *ImageHandler) serveThumbnail(c *gin.Context, image *models.Image, size 
 		}
 	}
 	
+	// Add cache-busting headers for thumbnails
+	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
+	c.Header("Pragma", "no-cache")
+	c.Header("Expires", "0")
 	c.File(thumbPath)
 }

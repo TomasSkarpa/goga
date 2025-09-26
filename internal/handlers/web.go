@@ -3,6 +3,7 @@ package handlers
 import (
 	"goga/internal/repository"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -37,5 +38,6 @@ func (h *WebHandler) ImageDetail(c *gin.Context) {
 	c.HTML(http.StatusOK, "image-detail.html", gin.H{
 		"title": image.OriginalName + " - Goga",
 		"image": image,
+		"timestamp": time.Now().Unix(),
 	})
 }

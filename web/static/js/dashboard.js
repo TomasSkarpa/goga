@@ -38,6 +38,29 @@ class Dashboard {
         this.loadServerConfig();
         this.loadImages();
     }
+    
+    // Toast notification system
+    showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        toast.style.cssText = `
+            position: fixed; top: 80px; right: 20px;
+            background: rgba(0,0,0,0.9); color: white;
+            padding: 12px 20px; border-radius: 8px;
+            backdrop-filter: blur(10px); z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            border-left: 4px solid ${type === 'error' ? '#ef4444' : '#10b981'};
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => toast.style.transform = 'translateX(0)', 100);
+        setTimeout(() => {
+            toast.style.transform = 'translateX(400px)';
+            setTimeout(() => document.body.removeChild(toast), 300);
+        }, 3000);
+    }
 
     initEventListeners() {
         // Upload area
@@ -125,9 +148,10 @@ class Dashboard {
         // Sort by recent access (most recent first), then by creation date
         const sortedImages = this.getSortedImagesByAccess();
         
+        const timestamp = Date.now();
         this.galleryStrip.innerHTML = sortedImages.map(image => `
             <div class="flex-shrink-0 cursor-pointer group" onclick="window.dashboard.showImageDetail('${image.id}')">
-                <img src="/api/images/${image.id}/file?thumb=280" 
+                <img src="/api/images/${image.id}/file?thumb=280&t=${timestamp}" 
                      alt="${image.original_name}" 
                      class="w-48 h-36 object-cover rounded-lg shadow-soft group-hover:scale-105 transition-transform" style="image-orientation: from-image;">
             </div>
@@ -137,9 +161,10 @@ class Dashboard {
     renderRecentUploads() {
         const recent = this.images.slice(0, 8);
         
+        const timestamp = Date.now();
         this.recentUploads.innerHTML = recent.map(image => `
             <div class="cursor-pointer group" onclick="window.dashboard.showImageDetail('${image.id}')">
-                <img src="/api/images/${image.id}/file?thumb=120" 
+                <img src="/api/images/${image.id}/file?thumb=120&t=${timestamp}" 
                      alt="${image.original_name}" 
                      class="w-full aspect-square object-cover rounded-lg shadow-inner-custom group-hover:scale-105 transition-transform" style="image-orientation: from-image;">
             </div>
@@ -351,13 +376,13 @@ class Dashboard {
                 localStorage.setItem('gogaConfig', JSON.stringify({hasApiKey: true}));
                 this.aiApiKeyInput.placeholder = 'API key configured (hidden)';
                 this.hideConfig();
-                showToast(isOverwrite ? 'API key overwritten!' : 'API key saved securely!');
+                this.showToast(isOverwrite ? 'API key overwritten!' : 'API key saved securely!');
             } else {
                 throw new Error('Server error');
             }
         }).catch(err => {
             console.error('Failed to save config:', err);
-            alert('Failed to save configuration');
+            this.showToast('Failed to save configuration', 'error');
         });
     }
 
@@ -398,9 +423,23 @@ class Dashboard {
             this.isLoading = false;
         }, 500);
     }
+    
+    // Refresh gallery thumbnails
+    refreshGallery() {
+        this.renderGalleryStrip();
+        this.renderRecentUploads();
+    }
 }
 
 // Initialize dashboard when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.dashboard = new Dashboard();
+    
+    // Listen for page visibility changes to refresh gallery
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            // Page became visible, refresh gallery in case images were edited
+            setTimeout(() => window.dashboard.refreshGallery(), 100);
+        }
+    });
 });

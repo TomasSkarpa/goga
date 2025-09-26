@@ -127,7 +127,7 @@
     <!-- Image Container -->
     <div class="image-container">
         <img id="mainImage" 
-             src="/api/images/{{.image.ID}}/file" 
+             src="/api/images/{{.image.ID}}/file?t={{.timestamp}}" 
              alt="{{.image.OriginalName}}" 
              class="main-image"
              style="image-orientation: from-image;">
