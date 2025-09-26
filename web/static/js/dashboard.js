@@ -11,6 +11,12 @@ class Dashboard {
         this.uploadProgress = document.getElementById('uploadProgress');
         this.configBtn = document.getElementById('configBtn');
         this.galleryBtn = document.getElementById('galleryBtn');
+        this.configModal = document.getElementById('configModal');
+        this.closeConfigBtn = document.getElementById('closeConfigBtn');
+        this.cancelConfigBtn = document.getElementById('cancelConfigBtn');
+        this.saveConfigBtn = document.getElementById('saveConfigBtn');
+        this.aiApiKeyInput = document.getElementById('aiApiKey');
+
         this.leftPanel = document.getElementById('leftPanel');
         this.bottomGallery = document.getElementById('bottomGallery');
         this.resizeHandle = document.getElementById('resizeHandle');
@@ -29,6 +35,7 @@ class Dashboard {
         this.maxSlideshowImages = 8;
         
         this.initEventListeners();
+        this.loadServerConfig();
         this.loadImages();
     }
 
@@ -56,6 +63,15 @@ class Dashboard {
         // Buttons
         this.configBtn.addEventListener('click', () => this.showConfig());
         this.galleryBtn.addEventListener('click', () => this.showFullGallery());
+        
+        // Config modal
+        this.closeConfigBtn.addEventListener('click', () => this.hideConfig());
+        this.cancelConfigBtn.addEventListener('click', () => this.hideConfig());
+        this.saveConfigBtn.addEventListener('click', () => this.saveConfig());
+
+        this.configModal.addEventListener('click', (e) => {
+            if (e.target === this.configModal) this.hideConfig();
+        });
         
         // Infinite scroll
         this.galleryStrip.addEventListener('scroll', () => this.handleScroll());
@@ -264,8 +280,68 @@ class Dashboard {
     }
 
     showConfig() {
-        alert('Configuration panel - Coming soon!');
+        this.loadConfig();
+        this.configModal.classList.remove('hidden');
     }
+    
+    hideConfig() {
+        this.configModal.classList.add('hidden');
+    }
+    
+    async loadServerConfig() {
+        try {
+            const response = await fetch('/api/config');
+            if (response.ok) {
+                const config = await response.json();
+                localStorage.setItem('gogaConfig', JSON.stringify(config));
+            }
+        } catch (error) {
+            console.error('Failed to load server config:', error);
+        }
+    }
+    
+    loadConfig() {
+        const config = JSON.parse(localStorage.getItem('gogaConfig') || '{}');
+        // Don't populate API key field for security - user must re-enter
+        this.aiApiKeyInput.value = '';
+        this.aiApiKeyInput.placeholder = config.aiApiKey ? 'API key configured (hidden)' : 'Enter your AI Studio API key';
+    }
+    
+    saveConfig() {
+        const apiKey = this.aiApiKeyInput.value.trim();
+        
+        // Only save if API key was entered
+        if (!apiKey) {
+            this.hideConfig();
+            return;
+        }
+        
+        const config = { aiApiKey: apiKey };
+        
+        // Send to server
+        fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        }).then(response => {
+            if (response.ok) {
+                // Clear input for security
+                this.aiApiKeyInput.value = '';
+                // Update localStorage to show key is configured
+                localStorage.setItem('gogaConfig', JSON.stringify({aiApiKey: '***configured***'}));
+                this.hideConfig();
+                alert('API key saved securely!');
+            } else {
+                throw new Error('Server error');
+            }
+        }).catch(err => {
+            console.error('Failed to save config:', err);
+            alert('Failed to save configuration');
+        });
+    }
+
+    
+
 
     showFullGallery() {
         // Toggle to full gallery view

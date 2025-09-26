@@ -11,9 +11,10 @@ import (
 )
 
 type Server struct {
-	router    *gin.Engine
-	db        *sql.DB
-	uploadDir string
+	router        *gin.Engine
+	db            *sql.DB
+	uploadDir     string
+	configHandler *handlers.ConfigHandler
 }
 
 func New(dbPath, uploadDir string) (*Server, error) {
@@ -35,6 +36,8 @@ func New(dbPath, uploadDir string) (*Server, error) {
 	}
 
 	// Initialize handlers
+	configHandler := handlers.NewConfigHandler()
+	configHandler.LoadConfig()
 	imageHandler := handlers.NewImageHandler(imageRepo, uploadDir)
 	webHandler := handlers.NewWebHandler()
 
@@ -56,12 +59,15 @@ func New(dbPath, uploadDir string) (*Server, error) {
 		api.POST("/images/:id/convert", imageHandler.ConvertImage)
 		api.DELETE("/images/:id", imageHandler.DeleteImage)
 		api.GET("/images/:id/file", imageHandler.ServeImage)
+		api.GET("/config", configHandler.GetConfig)
+		api.POST("/config", configHandler.UpdateConfig)
 	}
 
 	return &Server{
-		router:    router,
-		db:        db,
-		uploadDir: uploadDir,
+		router:        router,
+		db:            db,
+		uploadDir:     uploadDir,
+		configHandler: configHandler,
 	}, nil
 }
 

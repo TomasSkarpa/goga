@@ -140,6 +140,33 @@
         </div>
     </div>
 
+    <!-- Config Panel Modal -->
+    <div id="configModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center">
+        <div class="glass-panel rounded-2xl shadow-soft max-w-lg w-full mx-4 p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-white text-xl font-semibold">Configuration</h2>
+                <button id="closeConfigBtn" class="text-white/70 hover:text-white text-2xl">&times;</button>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- AI Studio API Key -->
+                <div>
+                    <label class="block text-white/90 text-sm font-medium mb-2">AI Studio API Key</label>
+                    <input type="password" id="aiApiKey" class="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50" placeholder="Enter your AI Studio API key" autocomplete="off" spellcheck="false" oncontextmenu="return false" oncopy="return false" onpaste="return false" oncut="return false">
+                    <p class="text-white/60 text-xs mt-1">For AI-powered image editing features</p>
+                </div>
+
+                <!-- Save Button -->
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button id="cancelConfigBtn" class="px-4 py-2 text-white/70 hover:text-white transition-colors">Cancel</button>
+                    <button id="saveConfigBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
     <script src="/static/js/dashboard.js"></script>
 </body>
 </html>
