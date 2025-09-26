@@ -127,7 +127,7 @@ class Dashboard {
         const recent = this.images.slice(0, 8);
         
         this.recentUploads.innerHTML = recent.map(image => `
-            <div class="cursor-pointer group" onclick="this.showImageDetail('${image.id}')">
+            <div class="cursor-pointer group" onclick="window.dashboard.showImageDetail('${image.id}')">
                 <img src="/api/images/${image.id}/file?thumb=120" 
                      alt="${image.original_name}" 
                      class="w-full aspect-square object-cover rounded-lg shadow-inner-custom group-hover:scale-105 transition-transform" style="image-orientation: from-image;">
