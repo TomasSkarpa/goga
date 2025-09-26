@@ -165,6 +165,74 @@
                     <input type="range" id="sharpen" class="slider flex-1" min="0" max="5" value="0" step="0.1">
                     <div id="sharpenValue" class="text-white text-sm w-8 text-right">0</div>
                 </div>
+                
+                <!-- Advanced Controls -->
+                <div class="border-t border-gray-600 pt-4 mt-4">
+                    <h3 class="text-white text-sm font-semibold mb-3">Advanced</h3>
+                    
+                    <!-- Shadows -->
+                    <div class="flex items-center space-x-4 mb-3">
+                        <div class="text-white text-sm w-20">Shadows</div>
+                        <input type="range" id="shadows" class="slider flex-1" min="-100" max="100" value="0">
+                        <div id="shadowsValue" class="text-white text-sm w-8 text-right">0</div>
+                    </div>
+                    
+                    <!-- Highlights -->
+                    <div class="flex items-center space-x-4 mb-3">
+                        <div class="text-white text-sm w-20">Highlights</div>
+                        <input type="range" id="highlights" class="slider flex-1" min="-100" max="100" value="0">
+                        <div id="highlightsValue" class="text-white text-sm w-8 text-right">0</div>
+                    </div>
+                    
+                    <!-- Temperature -->
+                    <div class="flex items-center space-x-4 mb-3">
+                        <div class="text-white text-sm w-20">Temperature</div>
+                        <input type="range" id="temperature" class="slider flex-1" min="-100" max="100" value="0">
+                        <div id="temperatureValue" class="text-white text-sm w-8 text-right">0</div>
+                    </div>
+                    
+                    <!-- Tint -->
+                    <div class="flex items-center space-x-4 mb-3">
+                        <div class="text-white text-sm w-20">Tint</div>
+                        <input type="range" id="tint" class="slider flex-1" min="-100" max="100" value="0">
+                        <div id="tintValue" class="text-white text-sm w-8 text-right">0</div>
+                    </div>
+                    
+                    <!-- Vibrance -->
+                    <div class="flex items-center space-x-4 mb-3">
+                        <div class="text-white text-sm w-20">Vibrance</div>
+                        <input type="range" id="vibrance" class="slider flex-1" min="-100" max="100" value="0">
+                        <div id="vibranceValue" class="text-white text-sm w-8 text-right">0</div>
+                    </div>
+                    
+                    <!-- Clarity -->
+                    <div class="flex items-center space-x-4 mb-3">
+                        <div class="text-white text-sm w-20">Clarity</div>
+                        <input type="range" id="clarity" class="slider flex-1" min="-100" max="100" value="0">
+                        <div id="clarityValue" class="text-white text-sm w-8 text-right">0</div>
+                    </div>
+                    
+                    <!-- Vignette -->
+                    <div class="flex items-center space-x-4 mb-3">
+                        <div class="text-white text-sm w-20">Vignette</div>
+                        <input type="range" id="vignette" class="slider flex-1" min="-100" max="100" value="0">
+                        <div id="vignetteValue" class="text-white text-sm w-8 text-right">0</div>
+                    </div>
+                    
+                    <!-- Noise Reduction -->
+                    <div class="flex items-center space-x-4 mb-3">
+                        <div class="text-white text-sm w-20">Noise</div>
+                        <input type="range" id="noise" class="slider flex-1" min="0" max="100" value="0">
+                        <div id="noiseValue" class="text-white text-sm w-8 text-right">0</div>
+                    </div>
+                    
+                    <!-- Rotate -->
+                    <div class="flex items-center space-x-4 mb-3">
+                        <div class="text-white text-sm w-20">Rotate</div>
+                        <input type="range" id="rotate" class="slider flex-1" min="-180" max="180" value="0">
+                        <div id="rotateValue" class="text-white text-sm w-8 text-right">0°</div>
+                    </div>
+                </div>
             </div>
             
             <!-- Action Buttons -->
@@ -218,7 +286,9 @@
         
         let editValues = {
             brightness: 0, contrast: 0, saturation: 0, hue: 0,
-            gamma: 0, blur: 0, sharpen: 0
+            gamma: 0, blur: 0, sharpen: 0, shadows: 0, highlights: 0,
+            temperature: 0, tint: 0, vibrance: 0, clarity: 0,
+            vignette: 0, noise: 0, rotate: 0
         };
         
         let previewTimeout;
@@ -238,14 +308,16 @@
         });
         
         // Setup sliders
-        ['brightness', 'contrast', 'saturation', 'hue', 'gamma', 'blur', 'sharpen'].forEach(control => {
+        ['brightness', 'contrast', 'saturation', 'hue', 'gamma', 'blur', 'sharpen', 
+         'shadows', 'highlights', 'temperature', 'tint', 'vibrance', 'clarity', 
+         'vignette', 'noise', 'rotate'].forEach(control => {
             const slider = document.getElementById(control);
             const valueDisplay = document.getElementById(control + 'Value');
             
             slider.addEventListener('input', (e) => {
                 const value = parseFloat(e.target.value);
                 editValues[control] = value;
-                valueDisplay.textContent = control === 'hue' ? value + '°' : value;
+                valueDisplay.textContent = (control === 'hue' || control === 'rotate') ? value + '°' : value;
                 
                 clearTimeout(previewTimeout);
                 previewTimeout = setTimeout(updatePreview, 200);
@@ -276,7 +348,17 @@
             .then(response => response.json())
             .then(() => {
                 alert('Changes applied!');
-                location.reload();
+                // Add cache-busting timestamp to force reload
+                const timestamp = Date.now();
+                mainImage.src = `/api/images/${imageId}/file?t=${timestamp}`;
+                // Reset edit state
+                Object.keys(editValues).forEach(key => {
+                    editValues[key] = 0;
+                    document.getElementById(key).value = 0;
+                    document.getElementById(key + 'Value').textContent = (key === 'hue' || key === 'rotate') ? '0°' : '0';
+                });
+                isEditMode = false;
+                editPanel.classList.remove('open');
             })
             .catch(err => alert('Failed to apply changes'));
         });
@@ -284,7 +366,15 @@
         // Reset
         document.getElementById('resetBtn').addEventListener('click', () => {
             fetch(`/api/images/${imageId}/edit/reset`, { method: 'POST' })
-            .then(() => location.reload())
+            .then(() => {
+                const timestamp = Date.now();
+                mainImage.src = `/api/images/${imageId}/file?t=${timestamp}`;
+                Object.keys(editValues).forEach(key => {
+                    editValues[key] = 0;
+                    document.getElementById(key).value = 0;
+                    document.getElementById(key + 'Value').textContent = (key === 'hue' || key === 'rotate') ? '0°' : '0';
+                });
+            })
             .catch(err => alert('Failed to reset'));
         });
         
@@ -293,7 +383,7 @@
             Object.keys(editValues).forEach(key => {
                 editValues[key] = 0;
                 document.getElementById(key).value = 0;
-                document.getElementById(key + 'Value').textContent = key === 'hue' ? '0°' : '0';
+                document.getElementById(key + 'Value').textContent = (key === 'hue' || key === 'rotate') ? '0°' : '0';
             });
             mainImage.src = originalSrc;
             isEditMode = false;
