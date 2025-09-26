@@ -69,6 +69,28 @@
             border-radius: 8px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
+        .toast {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        .toast.show {
+            transform: translateX(0);
+        }
+        .toast.success {
+            border-left: 4px solid #10b981;
+        }
+        .toast.error {
+            border-left: 4px solid #ef4444;
+        }
     </style>
 </head>
 <body class="photo-viewer">
@@ -295,6 +317,20 @@
         let isEditMode = false;
         let isInfoMode = false;
         
+        // Toast notification system
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 3000);
+        }
+        
         // Toggle edit mode
         editBtn.addEventListener('click', () => {
             isEditMode = !isEditMode;
@@ -347,7 +383,7 @@
             })
             .then(response => response.json())
             .then(() => {
-                alert('Changes applied!');
+                showToast('Changes applied successfully!');
                 // Add cache-busting timestamp to force reload
                 const timestamp = Date.now();
                 mainImage.src = `/api/images/${imageId}/file?t=${timestamp}`;
@@ -360,13 +396,14 @@
                 isEditMode = false;
                 editPanel.classList.remove('open');
             })
-            .catch(err => alert('Failed to apply changes'));
+            .catch(err => showToast('Failed to apply changes', 'error'));
         });
         
         // Reset
         document.getElementById('resetBtn').addEventListener('click', () => {
             fetch(`/api/images/${imageId}/edit/reset`, { method: 'POST' })
             .then(() => {
+                showToast('Image reset to original');
                 const timestamp = Date.now();
                 mainImage.src = `/api/images/${imageId}/file?t=${timestamp}`;
                 Object.keys(editValues).forEach(key => {
@@ -375,7 +412,7 @@
                     document.getElementById(key + 'Value').textContent = (key === 'hue' || key === 'rotate') ? '0°' : '0';
                 });
             })
-            .catch(err => alert('Failed to reset'));
+            .catch(err => showToast('Failed to reset image', 'error'));
         });
         
         // Cancel

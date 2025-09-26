@@ -351,7 +351,7 @@ class Dashboard {
                 localStorage.setItem('gogaConfig', JSON.stringify({hasApiKey: true}));
                 this.aiApiKeyInput.placeholder = 'API key configured (hidden)';
                 this.hideConfig();
-                alert(isOverwrite ? 'API key overwritten!' : 'API key saved securely!');
+                showToast(isOverwrite ? 'API key overwritten!' : 'API key saved securely!');
             } else {
                 throw new Error('Server error');
             }

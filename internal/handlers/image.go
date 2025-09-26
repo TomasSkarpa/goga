@@ -54,6 +54,12 @@ func (h *ImageHandler) UploadImage(c *gin.Context) {
 		return
 	}
 	defer file.Close()
+	
+	// CRITICAL: Validate file before processing
+	if err := utils.ValidateImageUpload(file, header); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	// Generate unique filename
 	id := uuid.New().String()
@@ -181,6 +187,11 @@ func (h *ImageHandler) ServeImage(c *gin.Context) {
 		return
 	}
 
+	// Add cache-busting headers
+	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
+	c.Header("Pragma", "no-cache")
+	c.Header("Expires", "0")
+	
 	// Get thumbnail size if requested
 	if thumb := c.Query("thumb"); thumb != "" {
 		if size, err := strconv.Atoi(thumb); err == nil && size > 0 && size <= 500 {
