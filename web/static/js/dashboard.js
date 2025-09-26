@@ -85,6 +85,17 @@ class Dashboard {
         this.uploadModal.addEventListener('click', (e) => {
             if (e.target === this.uploadModal) this.hideUploadModal();
         });
+        
+        // ESC key to close modals, Enter to save config
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.hideConfig();
+                this.hideUploadModal();
+            }
+            if (e.key === 'Enter' && !this.configModal.classList.contains('hidden')) {
+                this.saveConfig();
+            }
+        });
     }
 
     async loadImages() {
@@ -101,13 +112,13 @@ class Dashboard {
             this.startSlideshow();
         } catch (error) {
             console.error('Failed to load images:', error);
-            this.galleryStrip.innerHTML = '<div class="text-white/60 text-center py-8 px-4">Failed to load images</div>';
+            this.galleryStrip.innerHTML = '<div class="text-white/60 text-center py-8 px-4">Upload images to start</div>';
         }
     }
 
     renderGalleryStrip() {
         if (this.images.length === 0) {
-            this.galleryStrip.innerHTML = '<div class="text-white/60 text-center py-4 px-4 flex-shrink-0">No images</div>';
+            this.galleryStrip.innerHTML = '<div class="text-white/60 text-center py-4 px-4 flex-shrink-0">Upload images to start</div>';
             return;
         }
 
@@ -279,7 +290,8 @@ class Dashboard {
         window.location.href = `/image/${imageId}`;
     }
 
-    showConfig() {
+    async showConfig() {
+        await this.loadServerConfig();
         this.loadConfig();
         this.configModal.classList.remove('hidden');
     }
@@ -294,6 +306,10 @@ class Dashboard {
             if (response.ok) {
                 const config = await response.json();
                 localStorage.setItem('gogaConfig', JSON.stringify(config));
+                // Update placeholder based on server state
+                if (config.hasApiKey && this.aiApiKeyInput) {
+                    this.aiApiKeyInput.placeholder = 'API key configured (hidden)';
+                }
             }
         } catch (error) {
             console.error('Failed to load server config:', error);
@@ -304,7 +320,7 @@ class Dashboard {
         const config = JSON.parse(localStorage.getItem('gogaConfig') || '{}');
         // Don't populate API key field for security - user must re-enter
         this.aiApiKeyInput.value = '';
-        this.aiApiKeyInput.placeholder = config.aiApiKey ? 'API key configured (hidden)' : 'Enter your AI Studio API key';
+        this.aiApiKeyInput.placeholder = config.hasApiKey ? 'API key configured (hidden)' : 'Enter your AI Studio API key';
     }
     
     saveConfig() {
@@ -318,19 +334,24 @@ class Dashboard {
         
         const config = { aiApiKey: apiKey };
         
+        // Check if key already exists
+        const existingConfig = JSON.parse(localStorage.getItem('gogaConfig') || '{}');
+        const isOverwrite = existingConfig.hasApiKey;
+        
         // Send to server
         fetch('/api/config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(config)
+            body: JSON.stringify({ aiApiKey: apiKey })
         }).then(response => {
             if (response.ok) {
                 // Clear input for security
                 this.aiApiKeyInput.value = '';
                 // Update localStorage to show key is configured
-                localStorage.setItem('gogaConfig', JSON.stringify({aiApiKey: '***configured***'}));
+                localStorage.setItem('gogaConfig', JSON.stringify({hasApiKey: true}));
+                this.aiApiKeyInput.placeholder = 'API key configured (hidden)';
                 this.hideConfig();
-                alert('API key saved securely!');
+                alert(isOverwrite ? 'API key overwritten!' : 'API key saved securely!');
             } else {
                 throw new Error('Server error');
             }
