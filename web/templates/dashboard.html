@@ -140,6 +140,22 @@
         </div>
     </div>
 
+    <!-- Gallery Modal -->
+    <div id="galleryModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50">
+        <div class="glass-panel h-full w-full p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-white text-2xl font-semibold">Gallery</h2>
+                <button id="closeGalleryBtn" class="text-white/70 hover:text-white text-3xl">&times;</button>
+            </div>
+            
+            <div class="h-full overflow-y-auto">
+                <div id="galleryGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-20">
+                    <!-- Gallery items will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Config Panel Modal -->
     <div id="configModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center">
         <div class="glass-panel rounded-2xl shadow-soft max-w-lg w-full mx-4 p-6">

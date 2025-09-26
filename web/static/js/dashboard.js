@@ -12,7 +12,10 @@ class Dashboard {
         this.configBtn = document.getElementById('configBtn');
         this.galleryBtn = document.getElementById('galleryBtn');
         this.configModal = document.getElementById('configModal');
+        this.galleryModal = document.getElementById('galleryModal');
+        this.galleryGrid = document.getElementById('galleryGrid');
         this.closeConfigBtn = document.getElementById('closeConfigBtn');
+        this.closeGalleryBtn = document.getElementById('closeGalleryBtn');
         this.cancelConfigBtn = document.getElementById('cancelConfigBtn');
         this.saveConfigBtn = document.getElementById('saveConfigBtn');
         this.aiApiKeyInput = document.getElementById('aiApiKey');
@@ -97,6 +100,12 @@ class Dashboard {
             if (e.target === this.configModal) this.hideConfig();
         });
         
+        // Gallery modal
+        this.closeGalleryBtn.addEventListener('click', () => this.hideGallery());
+        this.galleryModal.addEventListener('click', (e) => {
+            if (e.target === this.galleryModal) this.hideGallery();
+        });
+        
         // Infinite scroll
         this.galleryStrip.addEventListener('scroll', () => this.handleScroll());
         
@@ -114,6 +123,7 @@ class Dashboard {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 this.hideConfig();
+                this.hideGallery();
                 this.hideUploadModal();
             }
             if (e.key === 'Enter' && !this.configModal.classList.contains('hidden')) {
@@ -405,8 +415,41 @@ class Dashboard {
 
 
     showFullGallery() {
-        // Toggle to full gallery view
-        alert('Full gallery view - Coming soon!');
+        this.renderGalleryGrid();
+        this.galleryModal.classList.remove('hidden');
+    }
+    
+    hideGallery() {
+        this.galleryModal.classList.add('hidden');
+    }
+    
+    renderGalleryGrid() {
+        if (this.images.length === 0) {
+            this.galleryGrid.innerHTML = '<div class="col-span-full text-white/60 text-center py-8">No images uploaded yet</div>';
+            return;
+        }
+
+        const sortedImages = this.getSortedImagesByAccess();
+        
+        this.galleryGrid.innerHTML = sortedImages.map(image => {
+            const version = this.getImageVersion(image.id);
+            return `
+            <div class="cursor-pointer group" onclick="window.dashboard.showImageDetail('${image.id}')">
+                <div class="relative aspect-square bg-gray-800 rounded-lg overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 animate-pulse"></div>
+                    <img src="/api/images/${image.id}/file?thumb=280&v=${version}" 
+                         alt="${image.original_name}" 
+                         class="absolute inset-0 w-full h-full object-cover rounded-lg group-hover:scale-105 transition-all duration-300 opacity-0" 
+                         style="image-orientation: from-image;" loading="lazy"
+                         onload="this.style.opacity='1'; this.previousElementSibling.style.display='none'">
+                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 rounded-lg"></div>
+                    <div class="absolute bottom-2 left-2 right-2 text-white text-xs truncate opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        ${image.original_name}
+                    </div>
+                </div>
+            </div>
+            `;
+        }).join('');
     }
 
     startResize(e) {
