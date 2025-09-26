@@ -384,6 +384,9 @@
             .then(response => response.json())
             .then(() => {
                 showToast('Changes applied successfully!');
+                // Signal other tabs that this image was edited
+                localStorage.setItem('imageEdited', imageId);
+                localStorage.removeItem('imageEdited'); // Trigger storage event
                 // Add cache-busting timestamp to force reload
                 const timestamp = Date.now();
                 mainImage.src = `/api/images/${imageId}/file?t=${timestamp}`;

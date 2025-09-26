@@ -25,6 +25,7 @@ class Dashboard {
         this.isLoading = false;
         this.isResizing = false;
         this.panelWidth = 320;
+        this.imageVersions = new Map(); // Smart cache invalidation
         
         this.images = [];
         this.slideshowImages = [];
@@ -148,27 +149,41 @@ class Dashboard {
         // Sort by recent access (most recent first), then by creation date
         const sortedImages = this.getSortedImagesByAccess();
         
-        const timestamp = Date.now();
-        this.galleryStrip.innerHTML = sortedImages.map(image => `
+        this.galleryStrip.innerHTML = sortedImages.map(image => {
+            const version = this.getImageVersion(image.id);
+            return `
             <div class="flex-shrink-0 cursor-pointer group" onclick="window.dashboard.showImageDetail('${image.id}')">
-                <img src="/api/images/${image.id}/file?thumb=280&t=${timestamp}" 
-                     alt="${image.original_name}" 
-                     class="w-48 h-36 object-cover rounded-lg shadow-soft group-hover:scale-105 transition-transform" style="image-orientation: from-image;">
+                <div class="relative w-48 h-36 bg-gray-800 rounded-lg overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 animate-pulse"></div>
+                    <img src="/api/images/${image.id}/file?thumb=280&v=${version}" 
+                         alt="${image.original_name}" 
+                         class="absolute inset-0 w-full h-full object-cover rounded-lg shadow-soft group-hover:scale-105 transition-all duration-300 opacity-0" 
+                         style="image-orientation: from-image;" loading="lazy"
+                         onload="this.style.opacity='1'; this.previousElementSibling.style.display='none'">
+                </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     renderRecentUploads() {
         const recent = this.images.slice(0, 8);
         
-        const timestamp = Date.now();
-        this.recentUploads.innerHTML = recent.map(image => `
+        this.recentUploads.innerHTML = recent.map(image => {
+            const version = this.getImageVersion(image.id);
+            return `
             <div class="cursor-pointer group" onclick="window.dashboard.showImageDetail('${image.id}')">
-                <img src="/api/images/${image.id}/file?thumb=120&t=${timestamp}" 
-                     alt="${image.original_name}" 
-                     class="w-full aspect-square object-cover rounded-lg shadow-inner-custom group-hover:scale-105 transition-transform" style="image-orientation: from-image;">
+                <div class="relative w-full aspect-square bg-gray-800 rounded-lg overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 animate-pulse"></div>
+                    <img src="/api/images/${image.id}/file?thumb=120&v=${version}" 
+                         alt="${image.original_name}" 
+                         class="absolute inset-0 w-full h-full object-cover rounded-lg shadow-inner-custom group-hover:scale-105 transition-all duration-300 opacity-0" 
+                         style="image-orientation: from-image;" loading="lazy"
+                         onload="this.style.opacity='1'; this.previousElementSibling.style.display='none'">
+                </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     preloadSlideshowImages() {
@@ -424,6 +439,20 @@ class Dashboard {
         }, 500);
     }
     
+    // Smart cache invalidation - only refresh edited images
+    getImageVersion(imageId) {
+        if (!this.imageVersions.has(imageId)) {
+            this.imageVersions.set(imageId, 1);
+        }
+        return this.imageVersions.get(imageId);
+    }
+    
+    // Increment version when image is edited
+    invalidateImageCache(imageId) {
+        const currentVersion = this.getImageVersion(imageId);
+        this.imageVersions.set(imageId, currentVersion + 1);
+    }
+    
     // Refresh gallery thumbnails
     refreshGallery() {
         this.renderGalleryStrip();
@@ -435,11 +464,25 @@ class Dashboard {
 document.addEventListener('DOMContentLoaded', () => {
     window.dashboard = new Dashboard();
     
-    // Listen for page visibility changes to refresh gallery
+    // Listen for image edit events from other tabs/windows
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'imageEdited') {
+            const imageId = e.newValue;
+            window.dashboard.invalidateImageCache(imageId);
+            window.dashboard.refreshGallery();
+        }
+    });
+    
+    // Listen for page visibility changes
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) {
-            // Page became visible, refresh gallery in case images were edited
-            setTimeout(() => window.dashboard.refreshGallery(), 100);
+            // Only refresh if we detect potential changes
+            const lastRefresh = localStorage.getItem('lastGalleryRefresh');
+            const now = Date.now();
+            if (!lastRefresh || now - parseInt(lastRefresh) > 30000) { // 30 seconds
+                setTimeout(() => window.dashboard.refreshGallery(), 100);
+                localStorage.setItem('lastGalleryRefresh', now.toString());
+            }
         }
     });
 });
