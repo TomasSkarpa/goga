@@ -39,7 +39,8 @@ func New(dbPath, uploadDir string) (*Server, error) {
 	configHandler := handlers.NewConfigHandler()
 	configHandler.LoadConfig()
 	imageHandler := handlers.NewImageHandler(imageRepo, uploadDir)
-	webHandler := handlers.NewWebHandler()
+	editHandler := handlers.NewEditHandler(imageRepo, uploadDir)
+	webHandler := handlers.NewWebHandler(imageRepo)
 
 	// Setup router
 	router := gin.Default()
@@ -59,6 +60,9 @@ func New(dbPath, uploadDir string) (*Server, error) {
 		api.POST("/images/:id/convert", imageHandler.ConvertImage)
 		api.DELETE("/images/:id", imageHandler.DeleteImage)
 		api.GET("/images/:id/file", imageHandler.ServeImage)
+		api.POST("/images/:id/edit/preview", editHandler.PreviewEdit)
+		api.POST("/images/:id/edit/apply", editHandler.ApplyEdit)
+		api.POST("/images/:id/edit/reset", editHandler.ResetImage)
 		api.GET("/config", configHandler.GetConfig)
 		api.POST("/config", configHandler.UpdateConfig)
 	}
