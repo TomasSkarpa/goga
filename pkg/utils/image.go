@@ -11,7 +11,7 @@ import (
 )
 
 func ProcessImage(inputPath, outputPath string, format string, quality int) error {
-	src, err := imaging.Open(inputPath)
+	src, err := imaging.Open(inputPath, imaging.AutoOrientation(true))
 	if err != nil {
 		return fmt.Errorf("failed to open image: %w", err)
 	}
